@@ -120,3 +120,60 @@ function getWorkspaceData(accountId, containerId) {
 
   return `✅ ${workspaces.length} workspaces written to the "${sheetName}" sheet.`;
 }
+
+/**
+ * What: Fetches GTM Tags for a given workspace.
+ * Why: Tags are core configurations for tracking, and exposing them helps with auditing.
+ * How: Calls GTM API v2 tags endpoint using accountId, containerId, and workspaceId.
+ */
+function getTags(accountId, containerId, workspaceId) {
+  const accessToken = ScriptApp.getOAuthToken();
+  const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/tags`;
+  Logger.log(`📦 Fetching tags for Account: ${accountId}, Container: ${containerId}, Workspace: ${workspaceId}`);
+
+  try {
+    const response = UrlFetchApp.fetch(url, {
+      headers: { Authorization: 'Bearer ' + accessToken }
+    });
+    const json = JSON.parse(response.getContentText());
+    const tags = json.tag || [];
+    Logger.log(`✅ Fetched ${tags.length} tags`);
+    return tags;
+  } catch (error) {
+    Logger.log("❌ Error fetching tags: " + error.message);
+    return [];
+  }
+}
+
+/**
+ * What: Writes GTM Tags to a Google Sheet.
+ * Why: Enables analysts to view, audit, or export tag info for tracking QA.
+ * How: Calls getTags() and writes results to a sheet named "Tags".
+ */
+function getTagsData(accountId, containerId, workspaceId) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetName = "Tags";
+  let sheet = ss.getSheetByName(sheetName);
+
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+  } else {
+    sheet.clearContents();
+  }
+
+  sheet.appendRow(["Name", "Type", "Tag ID", "Live Status", "Priority"]);
+
+  const tags = getTags(accountId, containerId, workspaceId);
+
+  tags.forEach(tag => {
+    sheet.appendRow([
+      tag.name || "No name",
+      tag.type || "Unknown type",
+      tag.tagId || "N/A",
+      tag.live ,
+      tag.priority || "Not set"
+    ]);
+  });
+
+  return `✅ ${tags.length} tags written to "${sheetName}" sheet.`;
+}
