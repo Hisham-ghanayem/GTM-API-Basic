@@ -33,6 +33,10 @@
     <button onclick="fetchData()">Fetch Workspace Data</button>
     <div id="status"></div>
 
+    <!-- New button for fetching GTM Tags -->
+    <button onclick="fetchTags()">Fetch Tags</button>
+
+
     <!-- the following function will call getAccounts function from our .gs -->
     <script>
       window.onload = function () {
@@ -118,6 +122,28 @@
           })
           .getWorkspaceData(accountId, containerId);
       }
+      function fetchTags() {
+  const accountId = document.getElementById("Account-Id").value;
+  const containerId = document.getElementById("Container-Id").value;
+  const workspaceId = document.getElementById("Workspace-Id").value;
+
+  if (!accountId || !containerId || !workspaceId) {
+    alert("Please select Account, Container, and Workspace.");
+    return;
+  }
+
+  document.getElementById("status").textContent = "Fetching Tags...";
+
+  google.script.run
+    .withSuccessHandler(msg => {
+      document.getElementById("status").textContent = msg;
+    })
+    .withFailureHandler(err => {
+      document.getElementById("status").textContent = "Error: " + err.message;
+    })
+    .getTagsData(accountId, containerId, workspaceId);
+}
+
     </script>
   </body>
 </html>
