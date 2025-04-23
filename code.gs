@@ -212,3 +212,95 @@ function formatTagParameters(paramArray) {
   if (!Array.isArray(paramArray)) return "None";
   return paramArray.map(p => `${p.key} : ${p.value}`).join(" || ");
 }
+
+// 🔹 Write Triggers to sheet
+function getTriggersData(accountId, containerId, workspaceId) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetName = "Triggers";
+  let sheet = ss.getSheetByName(sheetName);
+
+  if (!sheet) sheet = ss.insertSheet(sheetName);
+  else sheet.clearContents();
+
+  sheet.appendRow([
+    "Name", "Type", "Trigger ID", "Custom Event Filter", "Filter", "Auto Event Filter",
+    "Wait For Tags", "Finger Print", "Parent Folder Id", "Selector", "Notes", "parameter", "Quick Edit Link"
+  ]);
+
+  const triggers = getTriggers(accountId, containerId, workspaceId);
+
+  const rows = triggers.map(trigger => [
+    trigger.name || "No name",
+    trigger.type || "Unknown",
+    trigger.triggerId || "N/A",
+    formatCustomEventFilter(trigger.customEventFilter),
+    formatTriggersFilter(trigger.filter),
+    formatAutoEventFilter(trigger.autoEventFilter),
+    formatWaitForTags(trigger.waitForTags, trigger.type),
+    trigger.fingerprint || "N/A",
+    trigger.parentFolderId || "N/A",
+    trigger.selector?.value || "N/A", // ✅ FIXED: use .value from Parameter object
+    trigger.note || "No Note found",
+    trigger.parameter?.value || "N/A", 
+    trigger.tagManagerUrl	|| "Not Available"
+
+  ]);
+
+  if (rows.length) {
+    sheet.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
+  }
+
+  return `✅ ${rows.length} triggers written to "Triggers" sheet.`;
+}
+
+// 🔹 Helpers: Format filters and condition arrays
+function formatCustomEventFilter(filter) {
+  return Array.isArray(filter)
+    ? filter.map(f => {
+        const arg0 = f.parameter?.find(p => p.key === "arg0")?.value || "";
+        const arg1 = f.parameter?.find(p => p.key === "arg1")?.value || "";
+        const type = f.type || "unknown";
+
+        if (arg0 === "{{_event}}") {
+          return `event ${type} "${arg1}"`;
+        } else if (arg0 && arg1) {
+          return `${arg0} ${type} "${arg1}"`;
+        } else {
+          return `unknown condition`;
+        }
+      }).join(" | ")
+    : "None";
+}
+
+function formatTriggersFilter(filter) {
+  return formatCustomEventFilter(filter);
+}
+
+function formatAutoEventFilter(filter) {
+  return formatCustomEventFilter(filter);
+}
+
+// 🔹 Helper: Format Wait for Tags based on supported types
+function formatWaitForTags(value, type) {
+  const supported = ["linkClick", "formSubmit"];
+  if (!supported.includes(type)) {
+    return `Wait for tag not supported for ${type}`;
+  }
+
+  return value === true
+    ? "Enabled"
+    : value === false
+    ? "Disabled"
+    : "Unknown";
+}
+
+const IMPORTANT_KEYS = ["eventName", "eventValue", "currency", "userId", "conversionId"];
+
+function formatSmartTagParameters(paramArray) {
+  if (!Array.isArray(paramArray)) return "None";
+  
+  return paramArray
+    .filter(p => IMPORTANT_KEYS.includes(p.key))
+    .map(p => `${p.key}: ${p.value}`)
+    .join(" || ");
+}
