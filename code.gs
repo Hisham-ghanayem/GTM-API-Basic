@@ -149,6 +149,63 @@ function getTriggers(accountId, containerId, workspaceId) {
 }
 
 /**
+ * What: Fetches all GTM variables in a workspace
+ * Why: Get better idea about the workspace structure
+ * How: Calls GTM API variables  endpoint
+ */
+function getVariables(accountId, containerId, workspaceId) {
+  const accessToken = ScriptApp.getOAuthToken();
+  const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/variables`;
+
+  try {
+    const response = UrlFetchApp.fetch(url, {
+      headers: { Authorization: 'Bearer ' + accessToken }
+    });
+    const json = JSON.parse(response.getContentText());
+    return json.variable || [];
+  } catch (error) {
+    Logger.log("❌ Error fetching triggers: " + error.message);
+    return [];
+  }
+}
+
+/**
+ * What: Writes variables information to the "Variables" sheet
+ * Why: Allows users to audit, analyze, and jump into GTM directly
+ * How:
+ *  - Fetches tags + triggers
+ *  - Builds rows with tag details, trigger names, and tagManagerUrl
+ *  - Writes formatted data to Google Sheet
+ */
+function getVariablesData(accountId, containerId, workspaceId) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetName = "Variables";
+  let sheet = ss.getSheetByName(sheetName);
+  if (!sheet) sheet = ss.insertSheet(sheetName);
+  else sheet.clearContents();
+
+  sheet.appendRow([
+    "Name", "Type", "Tag Manager URL"
+  ]);
+
+  const tags = getTags(accountId, containerId, workspaceId);
+  const triggers = getTriggers(accountId, containerId, workspaceId);
+  const variables = getVariables(accountId, containerId, workspaceId);
+
+const rows = variables.map(n => [
+  n.name || "No name",
+  n.type || "Unknown",       
+  n.tagManagerUrl || "N/A"
+]);
+
+
+  if (rows.length) {
+    sheet.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
+  }
+
+  return `✅ ${variables.length} Variables written to "Variables" sheet.`;
+}
+/**
  * What: Writes tag information to the "Tags" sheet
  * Why: Allows users to audit, analyze, and jump into GTM directly
  * How:
