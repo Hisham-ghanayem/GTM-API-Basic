@@ -15,7 +15,6 @@
     </style>
   </head>
   <body>
-    //define the needed dropdown we use onchange as the drop-downs are depending on each other 
     <h3>Fetch GTM Workspace Data</h3>
 
     <select id="Account-Id" onchange="loadContainers()">
@@ -31,43 +30,39 @@
     </select>
 
     <button onclick="fetchData()">Fetch Workspace Data</button>
+    <button onclick="fetchTags()">Fetch Tags</button>
+    <button onclick="fetchTriggers()">Fetch Triggers</button>
+    <button onclick="fetchVariables()">Fetch Variables</button>
+
     <div id="status"></div>
 
-    <!-- New button for fetching GTM Tags -->
-    <button onclick="fetchTags()">Fetch Tags</button>
-
-
-    <!-- the following function will call getAccounts function from our .gs -->
     <script>
       window.onload = function () {
         google.script.run.withSuccessHandler(populateAccounts).getAccounts();
       };
 
-      // create a function that will populate the accounts
       function populateAccounts(accounts) {
-        const dropdown = document.getElementById("Account-Id"); // drop-down will capture Account-Id 
-        accounts.forEach(account => {                            // walk through all the accounts
-          const option = document.createElement("option");      // create a variable called option
-          option.value = account.accountId;                      // add value to option that equals the accountId
-          option.textContent = `${account.name} (${account.accountId})`; // Text value will be account name and account Id retrieved from account
+        const dropdown = document.getElementById("Account-Id");
+        accounts.forEach(account => {
+          const option = document.createElement("option");
+          option.value = account.accountId;
+          option.textContent = `${account.name} (${account.accountId})`;
           dropdown.appendChild(option);
         });
       }
 
-      // the following function will load the containers
       function loadContainers() {
-        const accountId = document.getElementById("Account-Id").value; // define the account Id from the previous step
+        const accountId = document.getElementById("Account-Id").value;
         if (!accountId) return;
 
-        document.getElementById("status").textContent = "Loading containers..."; // Change the content of status 
-        const containerDropdown = document.getElementById("Container-Id"); // Define container dropdown and give it a name as containerDropdown
-        const workspaceDropdown = document.getElementById("Workspace-Id");  // Define workspace dropdown
+        document.getElementById("status").textContent = "Loading containers...";
+        const containerDropdown = document.getElementById("Container-Id");
+        const workspaceDropdown = document.getElementById("Workspace-Id");
 
-        containerDropdown.innerHTML = '<option value="" disabled selected>Select Your Container</option>'; // delete all content in the container dropdown
-        workspaceDropdown.innerHTML = '<option value="" disabled selected>Select Your Workspace</option>'; // delete all content in the workspace dropdown
+        containerDropdown.innerHTML = '<option value="" disabled selected>Select Your Container</option>';
+        workspaceDropdown.innerHTML = '<option value="" disabled selected>Select Your Workspace</option>';
 
-        // go through all containers and then assign it a value
-        google.script.run.withSuccessHandler(containers => { 
+        google.script.run.withSuccessHandler(containers => {
           containers.forEach(container => {
             const option = document.createElement("option");
             option.value = container.containerId;
@@ -78,17 +73,15 @@
         }).getContainers(accountId);
       }
 
-      // callback list of all workspace based on account and container selected
       function loadWorkspaces() {
         const accountId = document.getElementById("Account-Id").value;
         const containerId = document.getElementById("Container-Id").value;
         if (!accountId || !containerId) return;
 
-        document.getElementById("status").textContent = "Loading workspaces...";  // Update the status
-        const dropdown = document.getElementById("Workspace-Id"); // define variable dropdown again for workspace
-        dropdown.innerHTML = '<option value="" disabled selected>Select Your Workspace</option>'; // clear dropdown
+        document.getElementById("status").textContent = "Loading workspaces...";
+        const dropdown = document.getElementById("Workspace-Id");
+        dropdown.innerHTML = '<option value="" disabled selected>Select Your Workspace</option>';
 
-        // go through all workspaces and define the value
         google.script.run.withSuccessHandler(workspaces => {
           workspaces.forEach(workspace => {
             const option = document.createElement("option");
@@ -100,7 +93,6 @@
         }).getWorkspace(accountId, containerId);
       }
 
-      // this function will fetch the data into the sheet
       function fetchData() {
         const accountId = document.getElementById("Account-Id").value;
         const containerId = document.getElementById("Container-Id").value;
@@ -111,7 +103,7 @@
           return;
         }
 
-        document.getElementById("status").textContent = "Fetching data...";
+        document.getElementById("status").textContent = "Fetching workspace data...";
 
         google.script.run
           .withSuccessHandler(msg => {
@@ -122,28 +114,72 @@
           })
           .getWorkspaceData(accountId, containerId);
       }
+
       function fetchTags() {
-  const accountId = document.getElementById("Account-Id").value;
-  const containerId = document.getElementById("Container-Id").value;
-  const workspaceId = document.getElementById("Workspace-Id").value;
+        const accountId = document.getElementById("Account-Id").value;
+        const containerId = document.getElementById("Container-Id").value;
+        const workspaceId = document.getElementById("Workspace-Id").value;
 
-  if (!accountId || !containerId || !workspaceId) {
-    alert("Please select Account, Container, and Workspace.");
-    return;
-  }
+        if (!accountId || !containerId || !workspaceId) {
+          alert("Please select Account, Container, and Workspace.");
+          return;
+        }
 
-  document.getElementById("status").textContent = "Fetching Tags...";
+        document.getElementById("status").textContent = "Fetching Tags...";
 
-  google.script.run
-    .withSuccessHandler(msg => {
-      document.getElementById("status").textContent = msg;
-    })
-    .withFailureHandler(err => {
-      document.getElementById("status").textContent = "Error: " + err.message;
-    })
-    .getTagsData(accountId, containerId, workspaceId);
-}
+        google.script.run
+          .withSuccessHandler(msg => {
+            document.getElementById("status").textContent = msg;
+          })
+          .withFailureHandler(err => {
+            document.getElementById("status").textContent = "Error: " + err.message;
+          })
+          .getTagsData(accountId, containerId, workspaceId);
+      }
 
+      function fetchTriggers() {
+        const accountId = document.getElementById("Account-Id").value;
+        const containerId = document.getElementById("Container-Id").value;
+        const workspaceId = document.getElementById("Workspace-Id").value;
+
+        if (!accountId || !containerId || !workspaceId) {
+          alert("Please select Account, Container, and Workspace.");
+          return;
+        }
+
+        document.getElementById("status").textContent = "Fetching Triggers...";
+
+        google.script.run
+          .withSuccessHandler(msg => {
+            document.getElementById("status").textContent = msg;
+          })
+          .withFailureHandler(err => {
+            document.getElementById("status").textContent = "Error: " + err.message;
+          })
+          .getTriggersData(accountId, containerId, workspaceId);
+      }
+
+      function fetchVariables() {
+        const accountId = document.getElementById("Account-Id").value;
+        const containerId = document.getElementById("Container-Id").value;
+        const workspaceId = document.getElementById("Workspace-Id").value;
+
+        if (!accountId || !containerId || !workspaceId) {
+          alert("Please select Account, Container, and Workspace.");
+          return;
+        }
+
+        document.getElementById("status").textContent = "Fetching Variables...";
+
+        google.script.run
+          .withSuccessHandler(msg => {
+            document.getElementById("status").textContent = msg;
+          })
+          .withFailureHandler(err => {
+            document.getElementById("status").textContent = "Error: " + err.message;
+          })
+          .getVariablesData(accountId, containerId, workspaceId);
+      }
     </script>
   </body>
 </html>
